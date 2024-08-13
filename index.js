@@ -34,5 +34,9 @@ app.post('/query', function (req, res) {
 
 )
 
+app.get('/rev', (req,res)=>{
+    res.send(revision);
+});
+
 console.log("running git revision: "+ revision)
 app.listen(3000)

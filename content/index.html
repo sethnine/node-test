@@ -26,6 +26,9 @@
   </head>
   <body>
     <div id="app" class="container">
+      <header class="p-1 bg-secondary d-flex justify-content-end">
+        <span class="text-light">Rev:{{siteRevision}}</span>
+      </header>
       <h1>Hello World!</h1>
       <form @submit.prevent="getRandom()">
         <label
@@ -42,6 +45,7 @@
       const app = Vue.createApp({
         data() {
           return {
+            siteRevision: null,
             min: 0,
             max: 100,
             randomNumber: null,
@@ -54,9 +58,22 @@
                 if (!r.ok) throw new Error("Could not fetch");
                 return r.json();
               })
-              .then((data) => (this.randomNumber = Number(data)))
               .catch(console.error);
           },
+        },
+        mounted() {
+          setInterval(() => {
+            fetch("/rev")
+              .then((r) => {
+                if (!r.ok) throw new Error("Could not fetch Revision");
+                return r.text();
+              })
+              .then((data) => {
+                if (this.siteRevision == null) this.siteRevision = data;
+                else if (this.siteRevision != data) location.reload();
+              })
+              .catch(console.error);
+          }, 2500);
         },
       });
       vm = app.mount("#app");
