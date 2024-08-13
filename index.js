@@ -1,6 +1,10 @@
 const express = require('express')
 const app = express()
 
+const revision = require('child_process')
+.execSync('git rev-parse --short HEAD')
+.toString().trim()
+
 app.get('/', express.static('content'))
 
 app.get('/random', function (req, res) {
@@ -30,4 +34,5 @@ app.post('/query', function (req, res) {
 
 )
 
+console.log("running git revision: "+ revision)
 app.listen(3000)
