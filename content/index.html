@@ -30,6 +30,12 @@
         <span class="text-light">Rev:{{siteRevision}}</span>
       </header>
       <h1>Hello World!</h1>
+      <h1 v-if="this.visitCount==1">
+        This is the first time you have visited, welcome!
+      </h1>
+      <p v-else>
+        This is the {{visitCount}}<sup>th</sup> time you have visited!
+      </p>
       <form @submit.prevent="getRandom()">
         <label
           >Min: <input type="number" name="min" pattern="[0-9]" v-model="min"
@@ -49,6 +55,7 @@
             min: 0,
             max: 100,
             randomNumber: null,
+            visitCount: 0,
           };
         },
         methods: {
@@ -56,13 +63,12 @@
             fetch(`/random?min=${this.min}&max=${this.max}`)
               .then((r) => {
                 if (!r.ok) throw new Error("Could not fetch");
-                return r.json();
+                return r.text();
               })
+              .then((d) => (this.randomNumber = d))
               .catch(console.error);
           },
-        },
-        mounted() {
-          setInterval(() => {
+          getCommitHash() {
             fetch("/rev")
               .then((r) => {
                 if (!r.ok) throw new Error("Could not fetch Revision");
@@ -73,7 +79,22 @@
                 else if (this.siteRevision != data) location.reload();
               })
               .catch(console.error);
-          }, 2500);
+          },
+          getVisitCount() {
+            fetch("/visitCount")
+              .then((r) => {
+                if (!r.ok) throw new Error("Could not fetch visit count!");
+                return r.json();
+              })
+              .then((r) => {
+                this.visitCount = r.visitCount;
+              });
+          },
+        },
+        mounted() {
+          this.getCommitHash();
+          setInterval(this.getCommitHash, 2500);
+          this.getVisitCount();
         },
       });
       vm = app.mount("#app");
