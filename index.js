@@ -26,16 +26,16 @@ const revision = require("child_process")
   .toString()
   .trim();
 
-let users = [
-  {
-    username: "jordan",
-    password: "$2b$10$w5W0CwSdfmuy5hMXMcxLEeTcl4rQH7fmGT1roT67mTY0XWr8smw/S", //password1
-  },
-  {
-    username: "jordan2",
-    password: "$2b$10$w5W0CwSdfmuy5hMXMcxLEeTcl4rQH7fmGT1roT67mTY0XWr8smw/S",
-  },
-];
+// let users = [
+//   {
+//     username: "jordan",
+//     password: "$2b$10$w5W0CwSdfmuy5hMXMcxLEeTcl4rQH7fmGT1roT67mTY0XWr8smw/S", //password1
+//   },
+//   {
+//     username: "jordan2",
+//     password: "$2b$10$w5W0CwSdfmuy5hMXMcxLEeTcl4rQH7fmGT1roT67mTY0XWr8smw/S",
+//   },
+// ];
 app.use(
   session({
     secret: "CHANGEME1",
@@ -87,9 +87,15 @@ app.get("/rev", (req, res) => {
 });
 
 app.use("/register", express.json({ limit: "1kb" }));
-app.post("/register", (req, res) => {
+app.post("/register", async (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
+
+  await client.connect();
+  // console.log("connected to server!");
+  const db = client.db(process.env.dbNAME);
+  const users = db.collection(process.env.dbCOLLECTION);
+
   // console.log(req.body);
   if (typeof username === "undefined") {
     // no username input
@@ -102,8 +108,8 @@ app.post("/register", (req, res) => {
     return;
   }
 
-  // username already taken
-  if (users.find((u) => u.username === username)) {
+  const user = await users.findOne({ username: username });
+  if (user) {
     res.status(409).json({ error: "username taken" });
     return;
   }
@@ -111,7 +117,7 @@ app.post("/register", (req, res) => {
   bcrypt.hash(password, saltRounds, (err, hash) => {
     console.log(err);
     // log(username, hash);
-    users.push({
+    users.insertOne({
       username: username,
       password: hash,
     });
@@ -122,11 +128,14 @@ app.post("/register", (req, res) => {
 });
 
 app.use("/login", express.json({ limit: "1mb" }));
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
+  const db = client.db(process.env.dbNAME);
+  const users = db.collection(process.env.dbCOLLECTION);
   // console.log(req.body);
 
+  // make sure input was given
   if (typeof username === "undefined") {
     // no username input
     res.status(400).json({ error: "bad request!" });
@@ -137,8 +146,12 @@ app.post("/login", (req, res) => {
     res.status(400).json({ error: "bad request!" });
     return;
   }
-  const u = users.find((u) => u.username === req.body.username);
-  if (u === undefined) {
+
+  // const u = users.find((u) => u.username === req.body.username);
+  const u = await users.findOne({
+    username: username,
+  });
+  if (!u) {
     // no matching user in db
     // console.log("cannot find user", username);
     res
@@ -156,7 +169,9 @@ app.post("/login", (req, res) => {
     }
 
     if (!result) {
-      res.status(401).json({ error: "cannot find matching user creds" }); // wrong password
+      res
+        .status(401)
+        .json({ error: "cannot find matching user with matching credentials" }); // wrong password
       return;
     }
 
