@@ -6,6 +6,21 @@ const { isNull } = require("util");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
+const { MongoClient } = require("mongodb");
+require("dotenv").config();
+
+const client = new MongoClient(process.env.dbURI);
+async function bob() {
+  await client.connect();
+  console.log("connected to server!");
+  const db = client.db(process.env.dbNAME);
+  const collection = db.collection(process.env.dbCOLLECTION);
+  // collection.insertMany(users);
+  console.log(await collection.countDocuments(), "users in users table");
+}
+
+bob();
+
 const revision = require("child_process")
   .execSync("git rev-parse --short HEAD")
   .toString()
