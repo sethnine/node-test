@@ -55,9 +55,10 @@ const revision = require("child_process")
 
 
 
-app.get("/endsession", (req: Request, res: Response) => {
+app.get("/logout", (req: Request, res: Response) => {
   req.session.destroy((err) => {
     console.log(err);
+    res.send("You are now logged out <script>setTimeout(()=>{window.location.href='/'}, 5000)</script>");
   });
 });
 app.use("/", express.static("content"));
